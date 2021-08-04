@@ -1,12 +1,12 @@
 import './App.css';
 import { useState, useEffect } from 'react';
 //importing custom components
-import TableCustom from './Tablecustom.js'
 import Pagelead from './Pagelead.js'
+import TableCustom from './Tablecustom.js'
 
 //API Handling Libraies
 import axios from 'axios'
-import Defiant from 'defiant'
+//import Defiant from '/BlueWhaleV2/project-bluewhale/node_modules/defiant'
 
 //import Table MUI
 import Table from '@material-ui/core/Table';
@@ -25,10 +25,11 @@ import MenuItem from "@material-ui/core/MenuItem"
 import Button from '@material-ui/core/Button'
 import AddIcon from '@material-ui/icons/Add'
 import RefreshIcon from '@material-ui/icons/Refresh';
+import CircularProgress from '@material-ui/core/CircularProgress';
 //
 
 //MUI Styles
-import { makeStyles } from '@material-ui/core/styles';
+import {makeStyles } from '@material-ui/core/styles';
 const useStyles = makeStyles((theme) => ({
   Select: {
     width: 300,
@@ -41,6 +42,9 @@ const useStyles = makeStyles((theme) => ({
   },
   InputLabel:{
     marginRight: 10
+  },
+  TableCustom:{
+    maxWidth: 700
   }
 }));
 export default function App() {
@@ -65,6 +69,12 @@ export default function App() {
   //resTypeSelected
   const [resTypeSelected, setResTypeSelected] = useState();
   
+  //State Variables
+  const [isLoading, setLoadingState] = useState(false)
+  const [isBlank, setBlankState] = useState(true)
+  const [dataCache, updateCache] = useState()
+  const [dataStore, updateStore] = useState([])
+  const [currentURL, updateUrl] = useState()
   /************************************************************************************************/
   //API FUnctions
   
@@ -91,9 +101,8 @@ export default function App() {
       }))
       //console.log(JSON.stringify(data3))
       const options3 = data3.map(d => ({
-        "id" : d.name,
-        "value" : d.name
-  
+        "id": d,
+        "value" : d
       }))
       setCloudSelected("empty")
       setTypeSelected("empty")
@@ -106,7 +115,7 @@ export default function App() {
     
     const API_RESPONSE = await axios.get('https://my-json-server.typicode.com/kmosoti/json-server-host/'+category)
     const API_DATA = API_RESPONSE.data
-    console.log("API RESPONSE: "+ JSON.stringify(API_DATA))
+    //console.log("API RESPONSE: "+ JSON.stringify(API_DATA))
     //const API_DATA = API_RESPONSE["Items"].data();
     const resource_options = API_DATA.map(d =>({
       "id": d.id,
@@ -116,16 +125,17 @@ export default function App() {
     setSelectResourceTypeOptions(resource_options)
   }
   const getResourceList = async(category) =>{
-
+    let URL = ('https://pz9xze9vsl.execute-api.us-east-1.amazonaws.com/prod/virtual-machines/list?provider=Azure&category='+category)
     let API_RESPONSE = {};
     if(category !== "virtualDisks"){  
-      API_RESPONSE = await axios.get('https://pz9xze9vsl.execute-api.us-east-1.amazonaws.com/prod/virtual-machines/list?provider=Azure&category='+category);  
+      API_RESPONSE = await axios.get(URL);  
     }
     else{
       API_RESPONSE = await axios.get('https://pz9xze9vsl.execute-api.us-east-1.amazonaws.com/prod/disks?provider=Azure');
     }
     const API_DATA = API_RESPONSE.data["Items"]
-    console.log("API RESPONSE: "+ JSON.stringify(API_DATA))
+    updateUrl(URL)
+    //console.log("API RESPONSE: "+ JSON.stringify(API_DATA))
     const resource_options = API_DATA.map(d =>({
       "id": d.name,
       "value": d.name
@@ -135,9 +145,21 @@ export default function App() {
   }
   
   //Object Search
+
   
+  const searchObject = async(nameCheck) =>{
+    setLoadingState(true)
+    const API_RESPONSE = await axios.get(currentURL)
+    const API_DATA = API_RESPONSE.data["Items"]
+    
+    const jsonObject = API_DATA.find( ({ name }) => name === nameCheck );
+    //console.log(jsonObject)
+    updateCache(jsonObject)
+    //console.log(JSON.stringify(jsonObject))
+  }
   
   //Select Functionality
+ 
   const loadCloudSelectOptions = (options) =>{
     //console.log("TESTING!!!"+JSON.stringify(options))
     return (
@@ -148,11 +170,11 @@ export default function App() {
   }
   
   const handleChangeCloud = (event) =>{
-    console.log("You Selected: "+event.target.value+"... with id:"+event.target.index)
+    //console.log("You Selected: "+event.target.value+"... with id:"+event.target.index)
     setCloudSelected(event.target.value)
     //console.log(this.state.resourceList)
     if(typeSelected !== "empty"){
-      console.log('Loading Resource Options...')
+      console.log('Loading Category Options...')
       getResourceOptions(typeSelected)
     }
   }
@@ -173,54 +195,20 @@ export default function App() {
     }
   }
   const handleAddButtonClick = () => {
-    alert("Clicked!!")
-      console.log(selectCloudOptions)
-      console.log(selectResourceCategoryOptions)
-      console.log(selectRegionOptons)
-      console.log("CloudSelected: "+cloudSelected)
-      console.log("typeSelected: "+JSON.stringify(typeSelected))
+      updateStore([...dataStore, dataCache])
+      setLoadingState(true)
   }
   const handleChangeResourceType = (event) =>{
     setResTypeSelected(event.target.value)
     getResourceList(event.target.value);
   }
   const handleResourceSelect = (event) =>{
-    
+    //console.log(event.target.value)
+    searchObject(event.target.value)
   }
   const handleRefresh = () => {
-    console.log(typeSelected)
-    getResourceOptions(typeSelected)
-    console.log(selectResourceTypeOptions)
-    getResourceList(selectResourceTypeOptions)
+    console.log("Regions: "+JSON.stringify(selectRegionOptons))
   }
-  //TableFunctionality
-  const renderTableHeader = () => {
-        return Object.keys(this.state.dataStore[0]).map(attr =>
-                <TableCell key={attr}>
-                    {attr.toUpperCase()}
-                </TableCell>
-            )
-    }
-    
-  const renderTableRows = () =>{
-        return this.state.dataStore.map(data => {
-            return (
-                <TableRow key={data.name}>
-                    <TableCell>{data.MemoryMB}</TableCell>
-                    <TableCell>{data["resource type"]}</TableCell>
-                    <TableCell>{data.vCPUs}</TableCell>
-                    <TableCell>{data["virtual machine type"]}</TableCell>
-                    <TableCell>{data.AWS_matches}</TableCell>
-                    <TableCell>{data.vCPUsPerCore}</TableCell>
-                    <TableCell>{data.MaxResourceVolumeMB}</TableCell>
-                    <TableCell>{data.provider}</TableCell>
-                    <TableCell>{data.MemoryGB}</TableCell>
-                    <TableCell>{data.ACUs}</TableCell>
-                    <TableCell>{data.name}</TableCell>
-                </TableRow>
-            )
-        })
-    }  
   //ETC Stuff
   const classes = useStyles();
   return (
@@ -239,7 +227,9 @@ export default function App() {
         
         <FormControl>
           <InputLabel htmlFor="region_var">Region</InputLabel>
-          <Select className={classes.Select} id="region_var"disabled/>
+          <Select className={classes.Select} id="region_var"d value="Canada (Central)" disabled>
+            {loadCloudSelectOptions(selectRegionOptons)}
+          </Select>
         </FormControl>
         
         <FormControl className="selectReact">
@@ -276,7 +266,6 @@ export default function App() {
           className={classes.Button}
           type="submit"
           variant="contained"
-          color="secondary"
           value="submit"
           onClick={handleRefresh}
           endIcon={<RefreshIcon/>}>
@@ -284,17 +273,7 @@ export default function App() {
         </Button> 
       </div>
       <div>
-        <TableContainer component={Paper}>
-            <Table className="btable" aria-label="simple table">
-                <TableHead>
-                    <TableRow>
-
-                    </TableRow>
-                </TableHead>
-                <TableBody>
-                </TableBody>
-            </Table>
-            </TableContainer>
+        <TableCustom passedData={dataStore}/>
       </div>
     </div>
   );

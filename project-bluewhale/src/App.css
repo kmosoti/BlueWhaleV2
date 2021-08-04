@@ -26,3 +26,13 @@
   margin-top: 200px;
   padding-top: 200px
 }
+
+.btable {
+  max-width: 700px;
+}
+
+.tableHeadFont {
+  font-weight: bold !important;
+  background-color: rgb(100, 170, 237);
+  border-bottom: 2px solid rgb(0, 0, 0);
+}
