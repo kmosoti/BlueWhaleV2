@@ -128,7 +128,7 @@ class TableCustom extends React.Component{
         //console.log("Getting Rows: "+JSON.stringify(this.state.dataStore))
         //this.getMatchedPrice(this.state.dataStore[0].name)
         return this.state.dataStore.map(data => {
-            console.log(data)
+            //console.log(data)
             return (
                 <TableRow key={data.name}>
                     <TableCell key={data.provider}>{data.provider}</TableCell>
