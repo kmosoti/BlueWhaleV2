@@ -30,7 +30,9 @@
 .btable {
   max-width: 700px;
 }
-
+.tablePrice {
+  font-weight: bold !important;
+}
 .tableHeadFont {
   font-weight: bold !important;
   background-color: rgb(100, 170, 237);
