@@ -107,7 +107,7 @@ class TableCustom extends React.Component{
             4:"AWS Matches",
             5:"Pricing (Monthly)",
             6:"vCPUs",
-            7:"Memory (GB)"
+            7:"RAM (GB)"
         }
         return(
             <TableRow>
